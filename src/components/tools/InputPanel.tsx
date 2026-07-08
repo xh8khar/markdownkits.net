@@ -41,8 +41,8 @@ export default function InputPanel({ label, value, onChange, language = 'markdow
   }, [])
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+    <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden" style={{ minHeight: 420 }}>
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 shrink-0">
         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</span>
         <label className="cursor-pointer text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
           <input ref={fileInputRef} type="file" accept=".txt,.md,.css,.html,.json,.yaml,.yml,.csv,.xml" className="hidden" onChange={handleFileChange} />
@@ -55,7 +55,7 @@ export default function InputPanel({ label, value, onChange, language = 'markdow
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="relative flex-1 min-h-[250px]"
+        className="relative flex-1"
       >
         {!value && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
@@ -68,7 +68,7 @@ export default function InputPanel({ label, value, onChange, language = 'markdow
           </div>
         )}
         <MonacoEditor
-          height="400px"
+          height="100%"
           language={language}
           value={value}
           onChange={(v) => onChange(v || '')}

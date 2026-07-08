@@ -30,14 +30,14 @@ export default function OutputPanel({ label, value, placeholder = '', error, lan
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+    <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden" style={{ minHeight: 420 }}>
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 shrink-0">
         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {label}
           {value && <span className="ml-2 font-normal text-slate-400">({value.length} chars)</span>}
         </span>
       </div>
-      <div className="relative flex-1 min-h-[250px]">
+      <div className="relative flex-1">
         {!value && placeholder && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className="text-center">
@@ -49,7 +49,7 @@ export default function OutputPanel({ label, value, placeholder = '', error, lan
           </div>
         )}
         <MonacoEditor
-          height="400px"
+          height="100%"
           language={language}
           value={value}
           theme="vs-dark"

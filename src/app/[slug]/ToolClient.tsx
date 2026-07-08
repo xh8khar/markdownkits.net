@@ -13,6 +13,26 @@ import OutputPanel from '@/components/tools/OutputPanel'
 
 const MermaidRenderer = dynamic(() => import('@/components/tools/MermaidRenderer'), { ssr: false })
 
+function inferLanguage(id: string | undefined, side: 'input' | 'output'): string {
+  if (!id) return 'markdown'
+  const parts = id.split('-to-')
+  if (parts.length !== 2) return 'markdown'
+  const fmt = side === 'input' ? parts[0] : parts[1]
+  const map: Record<string, string> = {
+    html: 'html', json: 'json', yaml: 'yaml', xml: 'xml', csv: 'plaintext', tsv: 'plaintext',
+    javascript: 'javascript', jsx: 'javascript', typescript: 'typescript', vue: 'html',
+    svelte: 'html', astro: 'html', mdx: 'markdown', latex: 'latex', bbcode: 'plaintext',
+    textile: 'plaintext', mediawiki: 'plaintext', confluence: 'plaintext', slack: 'plaintext',
+    discord: 'plaintext', whatsapp: 'plaintext', markdown: 'markdown', txt: 'plaintext',
+    pdf: 'plaintext', docx: 'plaintext', odt: 'plaintext', rtf: 'plaintext',
+    epub: 'plaintext', excel: 'plaintext', powerpoint: 'plaintext', jupyter: 'json',
+    mermaid: 'plaintext', restructuredtext: 'plaintext', org: 'plaintext',
+    docusaurus: 'markdown', mkdocs: 'markdown', hugo: 'markdown', jekyll: 'markdown',
+    nextjs: 'markdown', asciidoc: 'plaintext',
+  }
+  return map[fmt] || 'markdown'
+}
+
 function Button({ children, onClick, variant = 'primary', loading, ...props }: {
   children: React.ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost'; loading?: boolean; [key: string]: any
 }) {
@@ -33,6 +53,8 @@ export default function ToolClient({ tool }: { tool: Tool }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { componentType, convertFn, converterId, inputLabel, outputLabel, editorMode, generatorType } = config?.componentProps || {}
+  const inputLanguage = converterId ? inferLanguage(converterId, 'input') : 'markdown'
+  const outputLanguage = converterId ? inferLanguage(converterId, 'output') : 'markdown'
 
   const renderedHtml = useMemo(() => {
     if (componentType === 'editor' && input.trim()) {
@@ -74,7 +96,7 @@ export default function ToolClient({ tool }: { tool: Tool }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <InputPanel label="Mermaid Code" value={inputValue} onChange={setInputValue} placeholder="Enter Mermaid diagram code..." />
+          <InputPanel label="Mermaid Code" value={inputValue} onChange={setInputValue} placeholder="Enter Mermaid diagram code..." language="plaintext" />
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
             <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"><span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Diagram Preview</span></div>
             <div className="p-4 min-h-[300px] flex items-center justify-center"><MermaidRenderer chart={inputValue} /></div>
@@ -95,7 +117,7 @@ export default function ToolClient({ tool }: { tool: Tool }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <InputPanel label={inputLabel || 'Markdown Input'} value={input} onChange={setInput} placeholder="Enter Markdown..." />
+          <InputPanel label={inputLabel || 'Markdown Input'} value={input} onChange={setInput} placeholder="Enter Markdown..." language="markdown" />
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
             <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"><span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Live Preview</span></div>
             <div className="p-4 min-h-[300px] prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
@@ -115,8 +137,8 @@ export default function ToolClient({ tool }: { tool: Tool }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <InputPanel label={inputLabel || 'Input'} value={input} onChange={setInput} placeholder={`Enter ${(inputLabel || 'Input').toLowerCase()}...`} />
-        <OutputPanel label={outputLabel || 'Output'} value={output} placeholder={`${outputLabel || 'Output'} will appear here...`} error={error} />
+        <InputPanel label={inputLabel || 'Input'} value={input} onChange={setInput} placeholder={`Enter ${(inputLabel || 'Input').toLowerCase()}...`} language={inputLanguage} />
+        <OutputPanel label={outputLabel || 'Output'} value={output} placeholder={`${outputLabel || 'Output'} will appear here...`} error={error} language={outputLanguage} />
       </div>
       <div className="flex gap-3 flex-wrap">
         <Button onClick={handleAction} loading={loading}>{componentType === 'generator' || componentType === 'documentation' ? 'Generate' : componentType === 'formatter' ? 'Format' : 'Convert'}</Button>

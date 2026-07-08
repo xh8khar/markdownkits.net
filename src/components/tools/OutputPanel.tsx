@@ -1,13 +1,18 @@
 'use client'
 
+import dynamic from 'next/dynamic'
+
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+
 interface OutputPanelProps {
   label: string
   value: string
   placeholder?: string
   error?: string
+  language?: string
 }
 
-export default function OutputPanel({ label, value, placeholder = '', error }: OutputPanelProps) {
+export default function OutputPanel({ label, value, placeholder = '', error, language = 'markdown' }: OutputPanelProps) {
   if (error) {
     return (
       <div className="flex flex-col rounded-xl border border-red-400 bg-white dark:bg-slate-900 overflow-hidden">
@@ -32,9 +37,9 @@ export default function OutputPanel({ label, value, placeholder = '', error }: O
           {value && <span className="ml-2 font-normal text-slate-400">({value.length} chars)</span>}
         </span>
       </div>
-      <div className="relative flex-1 min-h-[140px]">
+      <div className="relative flex-1 min-h-[250px]">
         {!value && placeholder && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className="text-center">
               <svg className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -43,11 +48,22 @@ export default function OutputPanel({ label, value, placeholder = '', error }: O
             </div>
           </div>
         )}
-        <textarea
+        <MonacoEditor
+          height="400px"
+          language={language}
           value={value}
-          readOnly
-          className="w-full min-h-[140px] p-4 font-mono text-sm bg-transparent text-slate-900 dark:text-white resize-none focus:outline-none"
-          spellCheck={false}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 13,
+            lineNumbers: 'on',
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            automaticLayout: true,
+            padding: { top: 8 },
+            readOnly: true,
+            domReadOnly: true,
+          }}
         />
       </div>
     </div>

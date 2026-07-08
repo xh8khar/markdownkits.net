@@ -1,4 +1,5 @@
 import { tools } from '@/lib/navigation'
+import { getToolConfig } from '@/lib/toolConfig'
 import { notFound } from 'next/navigation'
 import ToolClient from './ToolClient'
 
@@ -10,10 +11,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const tool = tools.find(t => t.id === slug)
   if (!tool) return {}
+  const config = getToolConfig(slug)
   return {
-    title: tool.name,
-    description: tool.description,
-    openGraph: { title: tool.name, description: tool.description },
+    title: config?.title || `${tool.name} | MarkdownKits`,
+    description: config?.description || tool.description,
+    keywords: config?.keywords?.join(', ') || [tool.name, 'markdown', 'free tool'].join(', '),
+    openGraph: {
+      title: config?.title || `${tool.name} | MarkdownKits`,
+      description: config?.description || tool.description,
+      url: `https://www.markdownkits.net${tool.slug}`,
+    },
+    twitter: {
+      title: config?.title || `${tool.name} | MarkdownKits`,
+      description: config?.description || tool.description,
+    },
   }
 }
 

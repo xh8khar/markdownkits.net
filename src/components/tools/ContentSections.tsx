@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import type { Tool } from '@/types'
+import { getToolContent } from '@/lib/toolContent'
 
 const categoryIcons: Record<string, string> = {
   editor: 'edit',
@@ -15,14 +16,16 @@ const categoryIcons: Record<string, string> = {
 }
 
 function HowToUseSection({ tool }: { tool: Tool }) {
+  const content = getToolContent(tool.id)
+
   const steps: Record<string, string[]> = {
-    editor: [
+    editor: content.howToUse.length > 3 ? content.howToUse : [
       `Type or paste Markdown content into the editor panel on the left.`,
       `Click "Render Preview" or switch to Preview mode to see the formatted output.`,
       `Use the Split, Preview, and Source buttons to toggle between viewing modes.`,
       `Copy the rendered HTML or export your Markdown as needed.`,
     ],
-    converter: [
+    converter: content.howToUse.length > 3 ? content.howToUse : [
       `Paste or type the source content you want to convert in the Input panel.`,
       `Click the "Convert" button to transform your content into the target format.`,
       `Review the converted output in the Output panel.`,
@@ -91,13 +94,16 @@ function HowToUseSection({ tool }: { tool: Tool }) {
 }
 
 function FAQSection({ tool }: { tool: Tool }) {
+  const content = getToolContent(tool.id)
+  const hasPerToolFaq = content.faq.length > 3 || content.faq.some(f => !f.q.includes('free to use'))
+
   const faqMap: Record<string, { q: string; a: string }[]> = {
-    editor: [
+    editor: hasPerToolFaq ? content.faq : [
       { q: `What is ${tool.name}?`, a: `${tool.name} is a free online tool for editing and previewing Markdown content in real time. All processing happens in your browser — nothing is sent to any server.` },
       { q: `Can I export my Markdown as HTML?`, a: `Yes. You can copy the rendered HTML output or save it as a file for use in your projects.` },
       { q: `Is ${tool.name} free to use?`, a: `Yes, it is completely free with no usage limits or account required.` },
     ],
-    converter: [
+    converter: hasPerToolFaq ? content.faq : [
       { q: `What formats does ${tool.name} support?`, a: `This tool converts between Markdown and other document formats. Check the tool description for supported conversions.` },
       { q: `Is my data secure?`, a: `Yes. All conversion happens entirely in your browser. Your content is never uploaded to any server.` },
       { q: `Can I convert multiple files at once?`, a: `For batch conversions, check out the Batch Markdown Converter tool.` },

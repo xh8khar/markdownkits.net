@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import { marked } from 'marked'
 import type { Tool } from '@/types'
 import { getToolConfig } from '@/lib/toolConfig'
 import { tools as allTools } from '@/lib/navigation'
+import { chooseConverter } from '@/lib/converters'
 import ContentSections from '@/components/tools/ContentSections'
 import InputPanel from '@/components/tools/InputPanel'
 import OutputPanel from '@/components/tools/OutputPanel'
@@ -30,7 +32,16 @@ export default function ToolClient({ tool }: { tool: Tool }) {
   const [output, setOutput] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { componentType, convertFn, inputLabel, outputLabel, editorMode, generatorType } = config?.componentProps || {}
+  const { componentType, convertFn, converterId, inputLabel, outputLabel, editorMode, generatorType } = config?.componentProps || {}
+
+  const renderedHtml = useMemo(() => {
+    if (componentType === 'editor' && input.trim()) {
+      try {
+        return marked.parse(input, { async: false }) as string
+      } catch { return '' }
+    }
+    return ''
+  }, [input, componentType])
 
   const handleAction = useCallback(async () => {
     if (!input.trim()) return
@@ -38,8 +49,9 @@ export default function ToolClient({ tool }: { tool: Tool }) {
     setError('')
     await new Promise(r => setTimeout(r, 100))
     try {
-      if (convertFn) {
-        setOutput(convertFn(input))
+      const fn = convertFn || (converterId ? chooseConverter(converterId) : null)
+      if (fn) {
+        setOutput(fn(input))
       } else {
         setOutput(`Processing: ${input.substring(0, 100)}...`)
       }
@@ -47,7 +59,7 @@ export default function ToolClient({ tool }: { tool: Tool }) {
       setError(e?.message || 'An error occurred')
     }
     setLoading(false)
-  }, [input, convertFn])
+  }, [input, convertFn, converterId])
 
   const handleCopy = useCallback(() => { if (output) navigator.clipboard.writeText(output) }, [output])
 
@@ -72,6 +84,27 @@ export default function ToolClient({ tool }: { tool: Tool }) {
           <Button onClick={handleAction} loading={loading}>Render</Button>
           <Button onClick={() => setInputValue(exampleInput)} variant="ghost">Reset</Button>
           <Button onClick={handleCopy} variant="secondary">Copy Code</Button>
+        </div>
+        <ContentSections tool={tool} relatedTools={getRelatedTools(tool)} />
+      </div>
+    )
+  }
+
+  if (componentType === 'editor') {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+        <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <InputPanel label={inputLabel || 'Markdown Input'} value={input} onChange={setInput} placeholder="Enter Markdown..." />
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+            <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"><span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Live Preview</span></div>
+            <div className="p-4 min-h-[300px] prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+          </div>
+        </div>
+        <div className="flex gap-3 flex-wrap mb-8">
+          <Button onClick={() => { setInput(exampleInput); setError('') }} variant="ghost">Reset</Button>
+          {renderedHtml && <Button onClick={() => navigator.clipboard.writeText(renderedHtml)} variant="secondary">Copy HTML</Button>}
+          <Button onClick={() => navigator.clipboard.writeText(input)} variant="secondary">Copy Markdown</Button>
         </div>
         <ContentSections tool={tool} relatedTools={getRelatedTools(tool)} />
       </div>

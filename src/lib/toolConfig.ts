@@ -15,9 +15,8 @@ export interface ToolComponentProps {
   componentType: ToolComponentType
   inputLabel?: string
   outputLabel?: string
+  converterId?: string
   convertFn?: (input: string) => string
-  reverseFn?: (input: string) => string
-  bidirectional?: boolean
   editorMode?: 'split' | 'preview' | 'source'
   generatorType?: string
 }
@@ -36,161 +35,6 @@ const exampleTable = '| Name | Age | City |\n|------|-----|------|\n| Alice | 30
 const exampleDoc = '# Project Name\n\n## Overview\n\nThis project does X, Y, and Z.\n\n## Installation\n\n```bash\nnpm install my-package\n```\n\n## Usage\n\n```js\nimport { something } from \"my-package\"\n```\n\n## API\n\n### `function(options)`\n\nDoes something useful.\n\n| Param | Type | Description |\n|-------|------|-------------|\n| foo | string | The foo value |\n| bar | number | The bar count |\n\n## License\n\nMIT'
 
 const exampleBlog = '# My Blog Post\n\nBy **Author Name** · January 1, 2024\n\n## Introduction\n\nThis is the opening paragraph of my blog post. It introduces the topic.\n\n## Main Content\n\nHere is the main body of the article with **important** points.\n\n- Point one with details\n- Point two with *emphasis*\n- Point three with `code`\n\n## Conclusion\n\nThanks for reading! Leave a comment below.\n\n---\n\n*Published on My Blog*'
-
-function mdToHtml(input: string): string {
-  const { marked } = require('marked')
-  return marked.parse(input)
-}
-
-function htmlToMd(input: string): string {
-  const TurndownService = require('turndown')
-  const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', emDelimiter: '*' })
-  return turndown.turndown(input)
-}
-
-function formatMd(input: string): string {
-  return input.split('\n').map(l => l.trimEnd()).join('\n') + '\n'
-}
-
-function validateMd(input: string): string {
-  const issues: string[] = []
-  if (!input.trim()) issues.push('Input is empty')
-  const lines = input.split('\n')
-  lines.forEach((l, i) => {
-    if (l.startsWith('####')) issues.push(`Line ${i + 1}: Too many # characters`)
-  })
-  return issues.length ? issues.join('\n') : '✓ No issues found.'
-}
-
-function lintMd(input: string): string {
-  const issues: string[] = []
-  const lines = input.split('\n')
-  lines.forEach((l, i) => {
-    if (l.trim().startsWith('* ') && !l.trim().startsWith('* *')) issues.push(`Line ${i + 1}: Use - for unordered lists instead of *`)
-    if (l.includes('  ')) issues.push(`Line ${i + 1}: Multiple consecutive spaces`)
-  })
-  return issues.length ? issues.join('\n') : '✓ No lint issues.'
-}
-
-function countWords(input: string): string {
-  const text = input.replace(/[#*`\[\]>|_-]/g, ' ').replace(/\s+/g, ' ').trim()
-  const words = text ? text.split(' ').length : 0
-  const chars = input.length
-  const lines = input.split('\n').length
-  return `Words: ${words}\nCharacters: ${chars}\nLines: ${lines}`
-}
-
-function extractHeadings(input: string): string {
-  const headings = [...input.matchAll(/^(#{1,6})\s+(.+)$/gm)].map(m => `${'  '.repeat(m[1].length - 1)}${m[1]} ${m[2]}`)
-  return headings.length ? headings.join('\n') : 'No headings found.'
-}
-
-function extractLinks(input: string): string {
-  const links = [...input.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].map(m => `${m[1]}: ${m[2]}`)
-  return links.length ? links.join('\n') : 'No links found.'
-}
-
-function extractImages(input: string): string {
-  const imgs = [...input.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)].map(m => `${m[1] || 'image'}: ${m[2]}`)
-  return imgs.length ? imgs.join('\n') : 'No images found.'
-}
-
-function generateToc(input: string): string {
-  const headings = [...input.matchAll(/^(#{1,6})\s+(.+)$/gm)]
-  return headings.map(m => {
-    const level = m[1].length
-    const title = m[2].replace(/[`*_]/g, '')
-    const anchor = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    return `${'  '.repeat(level - 1)}- [${title}](#${anchor})`
-  }).join('\n')
-}
-
-function toJson(input: string): string {
-  const lines = input.split('\n').filter(Boolean)
-  const obj: Record<string, string> = {}
-  lines.forEach(l => {
-    const [k, ...v] = l.split(':')
-    if (k && v.length) obj[k.trim()] = v.join(':').trim()
-  })
-  return JSON.stringify(obj, null, 2)
-}
-
-function jsonToMd(input: string): string {
-  try {
-    const obj = JSON.parse(input)
-    return Object.entries(obj).map(([k, v]) => `- **${k}**: ${v}`).join('\n')
-  } catch { return 'Invalid JSON' }
-}
-
-function toYaml(input: string): string {
-  const yaml = require('js-yaml')
-  const lines = input.split('\n').filter(Boolean)
-  const obj: Record<string, string> = {}
-  lines.forEach(l => {
-    const [k, ...v] = l.split(':')
-    if (k && v.length) obj[k.trim()] = v.join(':').trim()
-  })
-  return yaml.dump(obj, { indent: 2, lineWidth: -1 })
-}
-
-function yamlToMd(input: string): string {
-  const yaml = require('js-yaml')
-  try {
-    const obj = yaml.load(input)
-    if (typeof obj === 'object' && obj) {
-      return Object.entries(obj as Record<string, unknown>).map(([k, v]) => `- **${k}**: ${v}`).join('\n')
-    }
-    return String(obj)
-  } catch { return 'Invalid YAML' }
-}
-
-function latexToMd(input: string): string {
-  return input
-    .replace(/\\section\{([^}]+)\}/g, '# $1')
-    .replace(/\\subsection\{([^}]+)\}/g, '## $1')
-    .replace(/\\textbf\{([^}]+)\}/g, '**$1**')
-    .replace(/\\textit\{([^}]+)\}/g, '*$1*')
-    .replace(/\\texttt\{([^}]+)\}/g, '`$1`')
-    .replace(/\\item\s+/g, '- ')
-}
-
-function mdToLatex(input: string): string {
-  return input
-    .replace(/^# (.+)$/gm, '\\section{$1}')
-    .replace(/^## (.+)$/gm, '\\subsection{$1}')
-    .replace(/\*\*(.+?)\*\*/g, '\\textbf{$1}')
-    .replace(/\*(.+?)\*/g, '\\textit{$1}')
-    .replace(/`(.+?)`/g, '\\texttt{$1}')
-    .replace(/^- /gm, '\\item ')
-}
-
-function bbcodeToMd(input: string): string {
-  return input
-    .replace(/\[b\]([\s\S]*?)\[\/b\]/g, '**$1**')
-    .replace(/\[i\]([\s\S]*?)\[\/i\]/g, '*$1*')
-    .replace(/\[u\]([\s\S]*?)\[\/u\]/g, '__$1__')
-    .replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/g, '[$2]($1)')
-    .replace(/\[img\]([^\]]+)\[\/img\]/g, '![image]($1)')
-    .replace(/\[code\]([\s\S]*?)\[\/code\]/g, '`$1`')
-    .replace(/\[quote\]([\s\S]*?)\[\/quote\]/g, '> $1')
-}
-
-function mdToBbcode(input: string): string {
-  return input
-    .replace(/\*\*(.+?)\*\*/g, '[b]$1[/b]')
-    .replace(/\*(.+?)\*/g, '[i]$1[/i]')
-    .replace(/__([^_]+)__/g, '[u]$1[/u]')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[url=$2]$1[/url]')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '[img]$2[/img]')
-    .replace(/`(.+?)`/g, '[code]$1[/code]')
-    .replace(/^> (.+)$/gm, '[quote]$1[/quote]')
-}
-
-function toMdx(input: string): string {
-  const imports = [...input.matchAll(/^```(\w+)$/gm)].map(m => `import CodeBlock from '@/components/CodeBlock'`).filter(Boolean)
-  const uniqueImports = [...new Set(imports)]
-  return (uniqueImports.length ? uniqueImports.join('\n') + '\n\n' : '') + input
-}
 
 function generateChangelog(input: string): string {
   const date = new Date().toISOString().split('T')[0]
@@ -367,6 +211,91 @@ function generateVersionCompare(input: string): string {
 
 function generateArchiveFolder(): string {
   return `# Archive / Folder Structure\n\n\`\`\`\nproject/\n├── src/\n│   ├── components/\n│   │   ├── Header.tsx\n│   │   ├── Footer.tsx\n│   │   └── Layout.tsx\n│   ├── pages/\n│   │   ├── index.tsx\n│   │   ├── about.tsx\n│   │   └── contact.tsx\n│   ├── lib/\n│   │   ├── utils.ts\n│   │   └── api.ts\n│   └── styles/\n│       └── globals.css\n├── public/\n│   ├── images/\n│   └── favicon.ico\n├── tests/\n├── package.json\n├── tsconfig.json\n└── README.md\n\`\`\`\n`
+}
+
+function formatMd(input: string): string {
+  return input
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\s+/gm, '')
+    .replace(/\s+$/gm, '')
+    .split('\n')
+    .map(l => l.trimEnd())
+    .join('\n')
+}
+
+function validateMd(input: string): string {
+  if (!input.trim()) return '⚠️ Empty document'
+  const lines = input.split('\n')
+  const headings = lines.filter(l => /^#{1,6}\s/.test(l))
+  const issues: string[] = []
+  if (headings.length === 0) issues.push('⚠️ No headings found')
+  const h1Count = headings.filter(h => /^#\s/.test(h)).length
+  if (h1Count > 1) issues.push('⚠️ Multiple H1 headings')
+  if (h1Count === 0 && headings.length > 0) issues.push('ℹ️ No H1 heading (starts with H2+)')
+  const codeFences = lines.filter(l => /^```/.test(l)).length
+  if (codeFences % 2 !== 0) issues.push('❌ Unclosed code fences')
+  if (!issues.length) return '✅ Document is valid\n\n' + `Headings: ${headings.length}\nLinks: ${(input.match(/\[([^\]]+)\]\(([^)]*)\)/g) || []).length}\nImages: ${(input.match(/!\[([^\]]*)\]\(([^)]*)\)/g) || []).length}\nCode blocks: ${Math.floor(codeFences / 2)}`
+  return issues.join('\n')
+}
+
+function lintMd(input: string): string {
+  const issues: string[] = []
+  const lines = input.split('\n')
+  lines.forEach((line, i) => {
+    if (line.length > 120) issues.push(`Line ${i + 1}: Line too long (${line.length} chars)`)
+    if (/\s+$/.test(line)) issues.push(`Line ${i + 1}: Trailing whitespace`)
+    if (/^#{1,6}\s+\d+\./.test(line)) issues.push(`Line ${i + 1}: Numbered heading`)
+  })
+  if (!/^#\s/.test(input)) issues.push('Document should start with an H1 heading')
+  const headingTexts = lines.filter(l => /^#{1,6}\s/.test(l)).map(h => h.replace(/^#+\s*/, '').toLowerCase())
+  const dupes = headingTexts.filter((h, i, a) => a.indexOf(h) !== i)
+  if (dupes.length) issues.push('Duplicate headings: ' + [...new Set(dupes)].join(', '))
+  return issues.length ? issues.join('\n') : '✅ No issues found'
+}
+
+function countWords(input: string): string {
+  const text = input.replace(/```[\s\S]*?```/g, '').replace(/[#*`~\[\]>|_-]/g, ' ')
+  const words = text.split(/\s+/).filter(Boolean).length
+  const charCount = input.length
+  const lineCount = input.split('\n').length
+  const paragraphs = input.split('\n\n').filter(Boolean).length
+  const headingCount = (input.match(/^#{1,6}\s/gm) || []).length
+  const codeBlockCount = (input.match(/```/g) || []).length / 2
+  const readTime = Math.ceil(words / 200)
+  return `Word Count: ${words}\nCharacter Count: ${charCount}\nLines: ${lineCount}\nParagraphs: ${paragraphs}\nHeadings: ${headingCount}\nCode Blocks: ${codeBlockCount}\nReading Time: ~${readTime} min`
+}
+
+function extractHeadings(input: string): string {
+  const headings = input.match(/^(#{1,6})\s+(.+)$/gm)
+  if (!headings) return 'No headings found.'
+  return headings.map(h => {
+    const level = h.match(/^#+/)?.[0].length || 1
+    return '  '.repeat(level - 1) + h
+  }).join('\n')
+}
+
+function extractLinks(input: string): string {
+  const links = [...input.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)]
+  if (!links.length) return 'No links found.'
+  return links.map(m => `- ${m[1]}: ${m[2]}`).join('\n')
+}
+
+function extractImages(input: string): string {
+  const images = [...input.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)]
+  if (!images.length) return 'No images found.'
+  return images.map(m => `- ${m[1] || '(no alt text)'}: ${m[2]}`).join('\n')
+}
+
+function generateToc(input: string): string {
+  const headings = [...input.matchAll(/^(#{1,6})\s+(.+)$/gm)]
+  if (!headings.length) return 'No headings found to generate TOC.'
+  return headings.map(m => {
+    const level = m[1].length
+    const indent = '  '.repeat(level - 1)
+    const anchor = m[2].toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')
+    return `${indent}- [${m[2]}](#${anchor})`
+  }).join('\n')
 }
 
 export const toolConfig: Record<string, ToolConfigEntry> = {
@@ -557,13 +486,13 @@ export const toolConfig: Record<string, ToolConfigEntry> = {
     title: 'Markdown to HTML Converter - Free Online Tool | MarkdownKits',
     description: 'Convert Markdown text to clean, semantic HTML markup instantly. Free online Markdown to HTML converter with real-time preview. 100% private.',
     keywords: ['markdown to html', 'md to html', 'markdown converter', 'convert markdown to html', 'html generator markdown'],
-    componentProps: { componentType: 'converter', exampleInput: exampleHeading, convertFn: mdToHtml, inputLabel: 'Markdown Input', outputLabel: 'HTML Output' },
+    componentProps: { componentType: 'converter', exampleInput: exampleHeading, converterId: 'markdown-to-html', inputLabel: 'Markdown Input', outputLabel: 'HTML Output' },
   },
   'html-to-markdown': {
     title: 'HTML to Markdown Converter - Free Online Tool | MarkdownKits',
     description: 'Convert HTML back into readable Markdown format. Free online HTML to Markdown converter. Paste HTML, get clean Markdown. No server uploads.',
     keywords: ['html to markdown', 'html to md', 'convert html to markdown', 'markdown converter', 'html converter'],
-    componentProps: { componentType: 'converter', exampleInput: '<h1>Hello World</h1>\n<p>This is <strong>bold</strong> text.</p>\n<ul>\n<li>Item 1</li>\n<li>Item 2</li>\n</ul>', convertFn: htmlToMd, inputLabel: 'HTML Input', outputLabel: 'Markdown Output' },
+    componentProps: { componentType: 'converter', exampleInput: '<h1>Hello World</h1>\n<p>This is <strong>bold</strong> text.</p>\n<ul>\n<li>Item 1</li>\n<li>Item 2</li>\n</ul>', converterId: 'html-to-markdown', inputLabel: 'HTML Input', outputLabel: 'Markdown Output' },
   },
   'markdown-to-pdf': {
     title: 'Markdown to PDF Converter - Free Online Tool | MarkdownKits',
@@ -629,25 +558,25 @@ export const toolConfig: Record<string, ToolConfigEntry> = {
     title: 'Markdown to JSON Converter - MD to JSON | MarkdownKits',
     description: 'Convert Markdown structured content to JSON format. Free online tool for transforming Markdown data into JSON objects.',
     keywords: ['markdown to json', 'md to json', 'convert markdown to json', 'json converter markdown'],
-    componentProps: { componentType: 'converter', exampleInput: 'name: John Doe\nage: 30\ncity: New York\nrole: Developer', convertFn: toJson, inputLabel: 'Markdown/Text Input', outputLabel: 'JSON Output' },
+    componentProps: { componentType: 'converter', exampleInput: 'name: John Doe\nage: 30\ncity: New York\nrole: Developer', converterId: 'markdown-to-json', inputLabel: 'Markdown/Text Input', outputLabel: 'JSON Output' },
   },
   'json-to-markdown': {
     title: 'JSON to Markdown Converter - JSON to MD | MarkdownKits',
     description: 'Convert JSON data into readable Markdown format. Free online JSON to Markdown converter for developers.',
     keywords: ['json to markdown', 'json to md', 'convert json to markdown', 'markdown from json'],
-    componentProps: { componentType: 'converter', exampleInput: '{"name": "John Doe", "age": 30, "city": "New York", "role": "Developer"}', convertFn: jsonToMd, inputLabel: 'JSON Input', outputLabel: 'Markdown Output' },
+    componentProps: { componentType: 'converter', exampleInput: '{"name": "John Doe", "age": 30, "city": "New York", "role": "Developer"}', converterId: 'json-to-markdown', inputLabel: 'JSON Input', outputLabel: 'Markdown Output' },
   },
   'markdown-to-yaml': {
     title: 'Markdown to YAML Converter - MD to YAML | MarkdownKits',
     description: 'Convert Markdown front matter and content to YAML format. Free online Markdown to YAML converter.',
     keywords: ['markdown to yaml', 'md to yaml', 'convert markdown to yaml', 'yaml converter'],
-    componentProps: { componentType: 'converter', exampleInput: 'title: My Document\nauthor: John Doe\npublished: 2024-01-01\ntags: guide, tutorial', convertFn: toYaml, inputLabel: 'Key: Value Input', outputLabel: 'YAML Output' },
+    componentProps: { componentType: 'converter', exampleInput: 'title: My Document\nauthor: John Doe\npublished: 2024-01-01\ntags: guide, tutorial', converterId: 'markdown-to-yaml', inputLabel: 'Key: Value Input', outputLabel: 'YAML Output' },
   },
   'yaml-to-markdown': {
     title: 'YAML to Markdown Converter - YAML to MD | MarkdownKits',
     description: 'Convert YAML data into Markdown formatted documents. Free online YAML to Markdown converter for configuration documentation.',
     keywords: ['yaml to markdown', 'yaml to md', 'convert yaml to markdown', 'markdown from yaml'],
-    componentProps: { componentType: 'converter', exampleInput: 'title: My Document\nauthor: John Doe\npublished: 2024-01-01\ntags:\n  - guide\n  - tutorial', convertFn: yamlToMd, inputLabel: 'YAML Input', outputLabel: 'Markdown Output' },
+    componentProps: { componentType: 'converter', exampleInput: 'title: My Document\nauthor: John Doe\npublished: 2024-01-01\ntags:\n  - guide\n  - tutorial', converterId: 'yaml-to-markdown', inputLabel: 'YAML Input', outputLabel: 'Markdown Output' },
   },
   'markdown-to-csv': {
     title: 'Markdown Table to CSV Converter | MarkdownKits',
@@ -701,25 +630,25 @@ export const toolConfig: Record<string, ToolConfigEntry> = {
     title: 'Markdown to LaTeX Converter - MD to LaTeX | MarkdownKits',
     description: 'Convert Markdown documents to LaTeX format. Free online converter for academic and scientific document preparation.',
     keywords: ['markdown to latex', 'md to latex', 'convert markdown to latex', 'latex from markdown', 'academic writing'],
-    componentProps: { componentType: 'converter', exampleInput: exampleHeading, convertFn: mdToLatex, inputLabel: 'Markdown Input', outputLabel: 'LaTeX Output' },
+    componentProps: { componentType: 'converter', exampleInput: exampleHeading, converterId: 'markdown-to-latex', inputLabel: 'Markdown Input', outputLabel: 'LaTeX Output' },
   },
   'latex-to-markdown': {
     title: 'LaTeX to Markdown Converter - LaTeX to MD | MarkdownKits',
     description: 'Convert LaTeX documents to readable Markdown format. Free online LaTeX to Markdown converter for content extraction.',
     keywords: ['latex to markdown', 'latex to md', 'convert latex to markdown', 'markdown from latex'],
-    componentProps: { componentType: 'converter', exampleInput: '\\section{Introduction}\nThis is the introduction paragraph.\n\n\\subsection{Background}\nHere is some \\textbf{background} information with \\textit{emphasis}.\n\n\\begin{itemize}\n\\item First item\n\\item Second item\n\\end{itemize}', convertFn: latexToMd, inputLabel: 'LaTeX Input', outputLabel: 'Markdown Output' },
+    componentProps: { componentType: 'converter', exampleInput: '\\section{Introduction}\nThis is the introduction paragraph.\n\n\\subsection{Background}\nHere is some \\textbf{background} information with \\textit{emphasis}.\n\n\\begin{itemize}\n\\item First item\n\\item Second item\n\\end{itemize}', converterId: 'latex-to-markdown', inputLabel: 'LaTeX Input', outputLabel: 'Markdown Output' },
   },
   'markdown-to-bbcode': {
     title: 'Markdown to BBCode Converter - MD to BBCode | MarkdownKits',
     description: 'Convert Markdown to BBCode format for forums. Free online converter for forum post formatting.',
     keywords: ['markdown to bbcode', 'md to bbcode', 'convert markdown to bbcode', 'forum markup converter'],
-    componentProps: { componentType: 'converter', exampleInput: exampleHeading, convertFn: mdToBbcode, inputLabel: 'Markdown Input', outputLabel: 'BBCode Output' },
+    componentProps: { componentType: 'converter', exampleInput: exampleHeading, converterId: 'markdown-to-bbcode', inputLabel: 'Markdown Input', outputLabel: 'BBCode Output' },
   },
   'bbcode-to-markdown': {
     title: 'BBCode to Markdown Converter - BBCode to MD | MarkdownKits',
     description: 'Convert BBCode forum markup to clean Markdown format. Free online BBCode to Markdown converter.',
     keywords: ['bbcode to markdown', 'bbcode to md', 'convert bbcode to markdown', 'forum to markdown'],
-    componentProps: { componentType: 'converter', exampleInput: '[b]Bold text[/b]\n[i]Italic text[/i]\n[url=https://example.com]Link[/url]\n[quote]Quoted text[/quote]', convertFn: bbcodeToMd, inputLabel: 'BBCode Input', outputLabel: 'Markdown Output' },
+    componentProps: { componentType: 'converter', exampleInput: '[b]Bold text[/b]\n[i]Italic text[/i]\n[url=https://example.com]Link[/url]\n[quote]Quoted text[/quote]', converterId: 'bbcode-to-markdown', inputLabel: 'BBCode Input', outputLabel: 'Markdown Output' },
   },
   'markdown-to-jsx': {
     title: 'Markdown to JSX Converter - MD to React JSX | MarkdownKits',
@@ -743,7 +672,7 @@ export const toolConfig: Record<string, ToolConfigEntry> = {
     title: 'Markdown to MDX Converter - MD to MDX | MarkdownKits',
     description: 'Convert Markdown to MDX (Markdown with JSX) format. Free online converter for Next.js and Gatsby content.',
     keywords: ['markdown to mdx', 'md to mdx', 'convert markdown to mdx', 'mdx converter', 'jsx in markdown'],
-    componentProps: { componentType: 'converter', exampleInput: exampleHeading, convertFn: toMdx, inputLabel: 'Markdown Input', outputLabel: 'MDX Output' },
+    componentProps: { componentType: 'converter', exampleInput: exampleHeading, converterId: 'markdown-to-mdx', inputLabel: 'Markdown Input', outputLabel: 'MDX Output' },
   },
   'markdown-to-asciidoc': {
     title: 'Markdown to AsciiDoc Converter - MD to AsciiDoc | MarkdownKits',

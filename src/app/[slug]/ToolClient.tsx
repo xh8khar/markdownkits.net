@@ -117,7 +117,7 @@ export default function ToolClient({ tool }: { tool: Tool }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <InputPanel label={inputLabel || 'Markdown Input'} value={input} onChange={setInput} placeholder="Enter Markdown..." language="markdown" />
+          <InputPanel label={inputLabel || 'Markdown Input'} value={input} onChange={setInput} placeholder="Enter Markdown..." language="markdown" useMonaco />
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
             <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"><span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Live Preview</span></div>
             <div className="p-4 min-h-[300px] prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
@@ -137,8 +137,8 @@ export default function ToolClient({ tool }: { tool: Tool }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="mb-6"><h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{tool.name}</h1><p className="text-slate-600 dark:text-slate-400">{tool.description}</p></div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <InputPanel label={inputLabel || 'Input'} value={input} onChange={setInput} placeholder={`Enter ${(inputLabel || 'Input').toLowerCase()}...`} language={inputLanguage} />
-        <OutputPanel label={outputLabel || 'Output'} value={output} placeholder={`${outputLabel || 'Output'} will appear here...`} error={error} language={outputLanguage} />
+        <InputPanel label={inputLabel || 'Input'} value={input} onChange={setInput} placeholder={`Enter ${(inputLabel || 'Input').toLowerCase()}...`} />
+        <OutputPanel label={outputLabel || 'Output'} value={output} placeholder={`${outputLabel || 'Output'} will appear here...`} error={error} />
       </div>
       <div className="flex gap-3 flex-wrap">
         <Button onClick={handleAction} loading={loading}>{componentType === 'generator' || componentType === 'documentation' ? 'Generate' : componentType === 'formatter' ? 'Format' : 'Convert'}</Button>
